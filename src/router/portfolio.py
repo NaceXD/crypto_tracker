@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-
+from datetime import datetime, timezone
 from src.database import get_db
 from src.models import Portfolio, Currency
-from src.schemas import AssetDepositSchema, PortfolioResponse
+from src.schemas import AssetDepositSchema, PortfolioResponse, UserPortfolioReportSchema
 
 router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 
@@ -63,3 +63,22 @@ async def deposit_asset(
     )
     refresh_result = await session.execute(stmt)
     return refresh_result.scalar_one()
+
+
+@router.get("/me", response_model=UserPortfolioReportSchema)
+async def get_user_portfolio(user_id: int, session: AsyncSession = Depends(get_db)):
+    query = select(Portfolio).where(Portfolio.user_id == user_id).options(joinedload(Portfolio.currency))
+    result = await session.execute(query)
+    assets = result.scalars().all()
+
+    total_balance = 0.0
+
+    for asset in assets:
+        total_balance += asset.amount * asset.currency.current_price
+
+    return {
+        "user_id": user_id,
+        "assets": assets,
+        "total_crypto_balance_usd": total_balance,
+        "calculated_at":datetime.now(timezone.utc),
+    }
