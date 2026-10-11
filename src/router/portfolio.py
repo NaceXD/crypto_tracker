@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timezone
+from decimal import Decimal
 from src.database import get_db
 from src.models import Portfolio, Currency
 from src.schemas import AssetDepositSchema, PortfolioResponse, UserPortfolioReportSchema
@@ -71,7 +72,7 @@ async def get_user_portfolio(user_id: int, session: AsyncSession = Depends(get_d
     result = await session.execute(query)
     assets = result.scalars().all()
 
-    total_balance = 0.0
+    total_balance = Decimal("0.0")
 
     for asset in assets:
         total_balance += asset.amount * asset.currency.current_price
