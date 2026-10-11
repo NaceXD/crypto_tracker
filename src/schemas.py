@@ -48,3 +48,7 @@ class UserResponse(UserBase):
     profile: Optional[ProfileResponse] = None
     portfolio_assets: List[PortfolioResponse] = []
     model_config = {"from_attributes": True}
+
+class AssetDepositSchema(BaseModel):
+    ticker: str = Field(..., min_length=2, max_length=10)
+    amount: float = Field(..., gt=0)
