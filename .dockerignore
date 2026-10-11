@@ -1,0 +1,15 @@
+# Исключаем локальное окружение и кэш
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Исключаем локальные секреты
+.env
+
+# Исключаем историю Git и тесты
+.git
+.gitignore
+tests/
+.pytest_cache/

@@ -1,0 +1,26 @@
+# 1. Секреты и настройки среды
+.env
+.env.local
+.env.*.local
+
+# 2. Кэш Python и байт-код
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 3. Виртуальные окружения
+.venv/
+venv/
+env/
+
+# 4. Базы данных
+*.sqlite3
+
+# 5. Настройки IDE и редакторов кода
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
