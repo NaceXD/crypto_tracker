@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_db
 from src.models import User, Profile
-from src.schemas import UserCreate, UserResponse
+from src.schemas import UserCreate, UserResponse, UserLogin
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -39,3 +39,14 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
     await session.refresh(new_user)
 
     return new_user
+
+@router.post("/login", response_model=UserResponse)
+async def login_user(user_data: UserLogin, session: AsyncSession = Depends(get_db)):
+    query = select(User).where(User.email == user_data.email)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+    password = hash_password(user_data.password)
+    if not user or password != user.hashed_password:
+        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+
+    return user
