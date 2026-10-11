@@ -1,12 +1,15 @@
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timezone
 from decimal import Decimal
+from concurrent.futures import ProcessPoolExecutor
 from src.database import get_db
 from src.models import Portfolio, Currency
 from src.schemas import AssetDepositSchema, PortfolioResponse, UserPortfolioReportSchema
+from src.services.analytics import calculate_single_portfolio_metrics
 
 router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 
@@ -81,5 +84,40 @@ async def get_user_portfolio(user_id: int, session: AsyncSession = Depends(get_d
         "user_id": user_id,
         "assets": assets,
         "total_crypto_balance_usd": total_balance,
-        "calculated_at":datetime.now(timezone.utc),
+        "calculated_at": datetime.now(timezone.utc),
     }
+
+
+@router.get("/analytics/all")
+async def get_all_portfolios_analytics(session: AsyncSession = Depends(get_db)):
+    query = select(Portfolio).options(joinedload(Portfolio.currency))
+    result = await session.execute(query)
+    all_asset = result.scalars().all()
+
+    raw_data_map = {}
+    for asset in all_asset:
+        uid = asset.user_id
+        if uid not in raw_data_map:
+            raw_data_map[uid] = {"user_id": uid, "total_value": 0.0, "assets": []}
+        asset_value = float(asset.amount * asset.currency.current_price)
+        raw_data_map[uid]["total_value"] += asset_value
+        raw_data_map[uid]["assets"].append({
+            "ticker": asset.currency.ticker,
+            "amount": float(asset.amount),
+            "price": float(asset.currency.current_price)
+        })
+    portfolios_list = list(raw_data_map.values())
+
+    if not portfolios_list:
+        return {"message": "Нет данных для расчета"}
+
+    loop = asyncio.get_running_loop()
+    with ProcessPoolExecutor(max_workers=2) as executor:
+        def run_parallel_mapping():
+            return list(executor.map(calculate_single_portfolio_metrics, portfolios_list))
+
+        analytics_results = await loop.run_in_executor(
+            None,
+            run_parallel_mapping,
+        )
+    return {"status": "success", "data": analytics_results}
