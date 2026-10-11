@@ -13,7 +13,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(100), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     profile: Mapped["Profile"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
-    portfolio_assert: Mapped[List["Portfolio"]] = relationship(
+    portfolio_assets: Mapped[List["Portfolio"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -50,7 +50,7 @@ class Portfolio(Base):
         ForeignKey('users.id', ondelete="CASCADE"),
         nullable=False,
     )
-    user: Mapped["User"] = relationship(back_populates="portfolio_assert")
+    user: Mapped["User"] = relationship(back_populates="portfolio_assets")
     currency_id: Mapped[int] = mapped_column(
         ForeignKey('currencies.id', ondelete="CASCADE"),
         nullable=False,
