@@ -52,3 +52,11 @@ class UserResponse(UserBase):
 class AssetDepositSchema(BaseModel):
     ticker: str = Field(..., min_length=2, max_length=10)
     amount: float = Field(..., gt=0)
+
+class UserPortfolioReportSchema(BaseModel):
+    user_id: int
+    assets: List[PortfolioResponse]
+    total_crypto_balance_usd: float
+    calculated_at: datetime
+
+    model_config = {"from_attributes": True}
